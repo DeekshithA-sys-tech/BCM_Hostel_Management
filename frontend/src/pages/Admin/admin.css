@@ -1,0 +1,129 @@
+.dashboard-container {
+  display: flex;
+  min-height: 100vh;
+  background: var(--bg-primary);
+}
+
+.dashboard-sidebar {
+  width: 280px;
+  padding: 2rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  border-right: 1px solid var(--border-color);
+  border-radius: 0;
+  border-top: 0;
+  border-bottom: 0;
+  border-left: 0;
+}
+
+.sidebar-title {
+  color: var(--brand-primary);
+  margin-bottom: 0.5rem;
+}
+
+.sidebar-subtitle {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.sidebar-nav-btn {
+  justify-content: flex-start;
+}
+
+.sidebar-logout-btn {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--danger);
+  margin-top: auto;
+}
+
+.dashboard-main {
+  flex: 1;
+  padding: 3rem;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 3rem;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+}
+
+.stat-card {
+  padding: 2rem;
+}
+
+.card-primary {
+  border-left: 4px solid var(--brand-primary);
+}
+
+.card-warning {
+  border-left: 4px solid var(--warning);
+  animation-delay: 100ms;
+}
+
+.card-success {
+  border-left: 4px solid var(--success);
+  animation-delay: 200ms;
+}
+
+.stat-title {
+  color: var(--text-secondary);
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.stat-value-container {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+}
+
+.stat-value {
+  font-size: 3rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.stat-subtext-success {
+  color: var(--success);
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+}
+
+.stat-subtext-danger {
+  color: var(--danger);
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+}
+
+.stat-subtext-muted {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+}
+
+.quick-action-section {
+  margin-top: 4rem;
+  background: var(--bg-secondary);
+  padding: 2rem;
+  border-radius: var(--radius-lg);
+}
+
+.empty-state-text {
+  color: var(--text-muted);
+  margin-top: 1rem;
+}
