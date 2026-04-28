@@ -4,10 +4,12 @@ const ApiError = require('../utils/ApiError');
 
 const getStaff = async (req, res, next) => {
     try {
-        const { role, isActive = true } = req.query;
-        const filter = {};
-        if (role) filter.role = role;
-        if (isActive !== undefined) filter.isActive = isActive === 'true';
+        const filter = { isActive: true }; // always show only active staff by default
+        if (req.query.role) filter.role = req.query.role;
+        // Allow fetching all (including inactive) if isActive=false is explicitly passed
+        if (req.query.isActive === 'false') {
+            delete filter.isActive;
+        }
 
         const staff = await Staff.find(filter).sort({ name: 1 });
         ApiResponse.success(res, { staff, count: staff.length });

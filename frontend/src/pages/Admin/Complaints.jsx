@@ -11,7 +11,9 @@ const Complaints = ({ onBack }) => {
     const fetchComplaints = async () => {
         try {
             const res = await api.get('/complaints?limit=100');
-            setComplaints(res.data.data.complaints || []);
+            // ApiResponse.paginated returns the array as `data` directly (not nested under a key)
+            const raw = res.data.data;
+            setComplaints(Array.isArray(raw) ? raw : (raw?.complaints || raw?.items || []));
         } catch (err) {
             console.error(err);
         } finally {
@@ -27,7 +29,12 @@ const Complaints = ({ onBack }) => {
         if (!replyState.text.trim()) return;
         setIsSubmitting(true);
         try {
-            await api.put(`/complaints/${id}/status`, { status: 'resolved', resolution: replyState.text });
+            // Try PATCH first (correct route), fall back to PUT
+            try {
+                await api.patch(`/complaints/${id}/status`, { status: 'resolved', resolution: replyState.text });
+            } catch {
+                await api.put(`/complaints/${id}/status`, { status: 'resolved', resolution: replyState.text });
+            }
             setReplyState({ id: null, text: '' });
             fetchComplaints();
         } catch (err) {

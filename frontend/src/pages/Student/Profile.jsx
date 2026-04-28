@@ -1,31 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import api from '../../services/api';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, RefreshCw, CheckCircle, XCircle, Clock } from 'lucide-react';
 import './student.css';
 
-const Profile = ({ studentInfo, onProfileUpdate, onBack }) => {
-  const [formData, setFormData] = useState({
-    sspId: '',
-    dateOfBirth: '',
-    gender: '',
-    bloodGroup: '',
-    mobile: '',
-    institution: '',
-    course: '',
-    year: '',
-    rollNumber: '',
-    guardianName: '',
-    guardianMobile: '',
-    street: '',
-    city: '',
-    state: '',
-    pincode: ''
-  });
+const EMPTY_FORM = {
+  sspId: '', dateOfBirth: '', gender: '', bloodGroup: '',
+  mobile: '', institution: '', course: '', year: '', rollNumber: '',
+  guardianName: '', guardianMobile: '',
+  street: '', city: '', state: '', pincode: ''
+};
 
+const Profile = ({ studentInfo, onProfileUpdate, onBack }) => {
+  const [formData, setFormData] = useState(EMPTY_FORM);
   const [documentFiles, setDocumentFiles] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState({ text: '', type: 'info' }); // type: info | success | error
+  const formRef = useRef(null);
 
+  // Populate form from studentInfo (but only if student is not in a 'just submitted' state)
   useEffect(() => {
     if (studentInfo) {
       setFormData({
@@ -57,11 +49,11 @@ const Profile = ({ studentInfo, onProfileUpdate, onBack }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setMessage('');
-    
+    setMessage({ text: '', type: 'info' });
+
     try {
       const form = new FormData();
-      
+
       // Append text fields
       Object.keys(formData).forEach(key => {
         if (formData[key]) form.append(key, formData[key]);
@@ -79,15 +71,35 @@ const Profile = ({ studentInfo, onProfileUpdate, onBack }) => {
           headers: { 'Content-Type': 'multipart/form-data' }
       });
 
-      setMessage('Profile and documents updated successfully. Awaiting Admin verification.');
+      setMessage({ text: '✅ Profile submitted successfully. Awaiting Admin verification.', type: 'success' });
+
+      // Clear the form after successful submission
+      setFormData(EMPTY_FORM);
+      setDocumentFiles({});
+      // Reset file inputs by resetting the form element
+      if (formRef.current) formRef.current.reset();
+
       if (onProfileUpdate) onProfileUpdate();
     } catch (err) {
       console.error(err);
-      setMessage(err.response?.data?.message || 'Failed to update profile.');
+      setMessage({ text: err.response?.data?.message || 'Failed to update profile.', type: 'error' });
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  const verificationStatus = studentInfo?.verificationStatus;
+  const rejectionRemarks = studentInfo?.verificationRemarks;
+  const isRejected = verificationStatus === 'rejected';
+  const isPending = verificationStatus === 'pending';
+  const isApproved = verificationStatus === 'approved';
+
+  const statusConfig = {
+    approved: { color: 'var(--success)', icon: <CheckCircle size={16} />, label: 'APPROVED' },
+    rejected: { color: 'var(--danger)', icon: <XCircle size={16} />, label: 'REJECTED' },
+    pending:  { color: 'var(--warning)', icon: <Clock size={16} />, label: 'PENDING REVIEW' },
+  };
+  const statusInfo = statusConfig[verificationStatus] || { color: 'var(--text-muted)', icon: null, label: 'NOT SUBMITTED' };
 
   return (
     <div className="glass-panel" style={{ padding: '2rem' }}>
@@ -96,17 +108,74 @@ const Profile = ({ studentInfo, onProfileUpdate, onBack }) => {
           <ArrowLeft size={16} /> Back to Overview
         </button>
       )}
-      <h2 style={{ marginBottom: '1rem', color: 'var(--brand-secondary)' }}>Complete Your Enrollment</h2>
-      <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>
-        Status: <strong style={{ color: studentInfo?.verificationStatus === 'approved' ? 'var(--success)' : 'var(--warning)' }}>
-          {studentInfo?.verificationStatus?.toUpperCase() || 'UNKNOWN'}
-        </strong>
-      </p>
 
-      {message && <div style={{ padding: '1rem', background: 'var(--bg-secondary)', color: 'var(--info)', marginBottom: '1rem', borderRadius: '4px' }}>{message}</div>}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem', flexWrap: 'wrap', gap: '1rem' }}>
+        <h2 style={{ margin: 0, color: 'var(--brand-secondary)' }}>
+          {isApproved ? 'Update My Profile' : 'Complete Your Enrollment'}
+        </h2>
+        <span style={{
+          display: 'flex', alignItems: 'center', gap: '0.4rem',
+          padding: '0.3rem 0.75rem', borderRadius: '20px',
+          background: `${statusInfo.color}22`, color: statusInfo.color,
+          fontWeight: 700, fontSize: '0.8rem', border: `1px solid ${statusInfo.color}`
+        }}>
+          {statusInfo.icon} {statusInfo.label}
+        </span>
+      </div>
 
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-        
+      {/* Rejection banner — shows reason and allows resubmit */}
+      {isRejected && (
+        <div style={{
+          padding: '1rem 1.25rem',
+          background: 'rgba(239,68,68,0.08)',
+          border: '1px solid var(--danger)',
+          borderRadius: '8px',
+          marginBottom: '1.5rem',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '0.5rem'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--danger)', fontWeight: 700, fontSize: '0.95rem' }}>
+            <XCircle size={18} /> Profile Rejected
+          </div>
+          {rejectionRemarks && (
+            <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+              <strong>Reason:</strong> {rejectionRemarks}
+            </p>
+          )}
+          <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+            Please correct your details below and resubmit for verification.
+          </p>
+        </div>
+      )}
+
+      {isPending && (
+        <div style={{
+          padding: '0.75rem 1rem',
+          background: 'rgba(245,158,11,0.08)',
+          border: '1px solid var(--warning)',
+          borderRadius: '8px',
+          marginBottom: '1.5rem',
+          color: 'var(--warning)',
+          fontSize: '0.9rem'
+        }}>
+          ⏳ Your profile is under review. You may update and resubmit if needed.
+        </div>
+      )}
+
+      {message.text && (
+        <div style={{
+          padding: '1rem', marginBottom: '1rem', borderRadius: '4px',
+          background: message.type === 'success' ? 'rgba(16,185,129,0.1)' : message.type === 'error' ? 'rgba(239,68,68,0.1)' : 'var(--bg-secondary)',
+          color: message.type === 'success' ? 'var(--success)' : message.type === 'error' ? 'var(--danger)' : 'var(--info)',
+          border: `1px solid ${message.type === 'success' ? 'var(--success)' : message.type === 'error' ? 'var(--danger)' : 'var(--border-color)'}`
+        }}>
+          {message.text}
+        </div>
+      )}
+
+      <form ref={formRef} onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+
         {/* Personal Details */}
         <div>
            <h3 style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem', marginBottom: '1rem' }}>Personal Details</h3>
@@ -182,7 +251,7 @@ const Profile = ({ studentInfo, onProfileUpdate, onBack }) => {
              </div>
            </div>
         </div>
-        
+
         {/* Address */}
         <div>
            <h3 style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem', marginBottom: '1rem', marginTop: '1rem' }}>Permanent Address</h3>
@@ -220,8 +289,12 @@ const Profile = ({ studentInfo, onProfileUpdate, onBack }) => {
            </div>
         </div>
 
-        <button type="submit" className="btn btn-primary" style={{ marginTop: '2rem', alignSelf: 'flex-start' }} disabled={isSubmitting}>
-           {isSubmitting ? 'Saving Profile...' : 'Submit Profile for Verification'}
+        <button type="submit" className="btn btn-primary" style={{ marginTop: '2rem', alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: '0.5rem' }} disabled={isSubmitting}>
+           {isSubmitting ? (
+             <><RefreshCw size={16} style={{ animation: 'spin 1s linear infinite' }} /> Saving Profile...</>
+           ) : (
+             isRejected ? '↩ Resubmit Profile for Verification' : 'Submit Profile for Verification'
+           )}
         </button>
 
       </form>

@@ -20,3 +20,11 @@
 535 5.7.8  https://support.google.com/mail/?p=BadCredentials 41be03b00d2f7-c7fc33d82dfsm1047805a12.25 - gsmtp
 2026-04-28 10:58:13 [error]: Email failed to john@gmail.com: Invalid login: 535-5.7.8 Username and Password not accepted. For more information, go to
 535 5.7.8  https://support.google.com/mail/?p=BadCredentials 98e67ed59e1d1-3649091f5c4sm527990a91.6 - gsmtp
+2026-04-28 11:35:38 [error]: Email failed to xyz@gmail.com: Invalid login: 535-5.7.8 Username and Password not accepted. For more information, go to
+535 5.7.8  https://support.google.com/mail/?p=BadCredentials d2e1a72fcca58-834daf624d9sm1408958b3a.43 - gsmtp
+2026-04-28 11:40:52 [error]: Email failed to xyz@gmail.com: Invalid login: 535-5.7.8 Username and Password not accepted. For more information, go to
+535 5.7.8  https://support.google.com/mail/?p=BadCredentials d9443c01a7336-2b97aa7b7d5sm14331935ad.12 - gsmtp
+2026-04-28 11:52:56 [error]: Email failed to deo@gmail.com: Invalid login: 535-5.7.8 Username and Password not accepted. For more information, go to
+535 5.7.8  https://support.google.com/mail/?p=BadCredentials d9443c01a7336-2b97aa95a7fsm14569195ad.24 - gsmtp
+2026-04-28 11:57:28 [error]: Email failed to deo@gmail.com: Invalid login: 535-5.7.8 Username and Password not accepted. For more information, go to
+535 5.7.8  https://support.google.com/mail/?p=BadCredentials 98e67ed59e1d1-36490dbca1fsm1968681a91.1 - gsmtp

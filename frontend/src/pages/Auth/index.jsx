@@ -20,8 +20,11 @@ const Auth = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const EMPTY_FORM = { email: '', password: '', name: '', sspId: '' };
+
   const toggleMode = () => {
     setIsLogin((prev) => !prev);
+    setFormData(EMPTY_FORM);  // clear all fields when switching modes
     useAuthStore.setState({ error: null });
   };
 
@@ -37,9 +40,9 @@ const Auth = () => {
         }
       } else {
         await register(formData);
-        // Switch to login view on successful registration
+        // Switch to login view on successful registration with empty fields
+        setFormData(EMPTY_FORM);
         setIsLogin(true);
-        // Optionally clear form or set a local success message here
       }
     } catch (err) {
       console.error(err);

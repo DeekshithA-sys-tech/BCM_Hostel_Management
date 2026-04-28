@@ -11,8 +11,9 @@ const staffSchema = new mongoose.Schema(
         },
         role: {
             type: String,
-            enum: Object.values(STAFF_ROLES),
-            required: true
+            required: [true, 'Role is required'],
+            trim: true,
+            maxlength: 100
         },
         mobile: {
             type: String,
