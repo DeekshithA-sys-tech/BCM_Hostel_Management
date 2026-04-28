@@ -57,7 +57,10 @@ const AdminDashboard = () => {
           <>
             <header className="dashboard-header">
               <h1>Dashboard Overview</h1>
-              <button className="btn btn-primary"><UserPlus size={18} /> Add Staff</button>
+              {/* Fixed: clicking Add Staff navigates to the Food & Staff tab */}
+              <button className="btn btn-primary" onClick={() => setActiveTab('foodstaff')}>
+                <UserPlus size={18} /> Add Staff
+              </button>
             </header>
 
             <div className="stats-grid">
@@ -65,7 +68,7 @@ const AdminDashboard = () => {
               <div className="glass-panel animate-fade-in stat-card card-primary">
                 <h3 className="stat-title">Total Students</h3>
                 <div className="stat-value-container">
-                  <span className="stat-value">{stats.totalStudents || 124}</span>
+                  <span className="stat-value">{stats.totalStudents || 0}</span>
                   <span className="stat-subtext-success">+12% this month</span>
                 </div>
               </div>
@@ -73,7 +76,7 @@ const AdminDashboard = () => {
               <div className="glass-panel animate-fade-in stat-card card-warning">
                 <h3 className="stat-title">Pending Approvals</h3>
                 <div className="stat-value-container">
-                  <span className="stat-value">{stats.pendingApprovals || 18}</span>
+                  <span className="stat-value">{stats.pendingApprovals || 0}</span>
                   <span className="stat-subtext-danger">Requires Attention</span>
                 </div>
               </div>
@@ -89,18 +92,24 @@ const AdminDashboard = () => {
             </div>
 
             <section className="quick-action-section">
-               <h2>Recent Activities</h2>
-               <p className="empty-state-text">No recent activities to display.</p>
+               <h2>Quick Actions</h2>
+               <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '1rem' }}>
+                 <button className="btn btn-secondary" onClick={() => setActiveTab('approvals')}><CheckSquare size={16} /> View Approvals</button>
+                 <button className="btn btn-secondary" onClick={() => setActiveTab('students')}><Users size={16} /> Student Directory</button>
+                 <button className="btn btn-secondary" onClick={() => setActiveTab('rooms')}><Bed size={16} /> Room Layout</button>
+                 <button className="btn btn-secondary" onClick={() => setActiveTab('broadcast')}><Bell size={16} /> Send Broadcast</button>
+                 <button className="btn btn-secondary" onClick={() => setActiveTab('foodstaff')}><Coffee size={16} /> Food & Staff</button>
+               </div>
             </section>
           </>
         )}
 
-        {activeTab === 'approvals' && <Approvals />}
-        {activeTab === 'broadcast' && <Broadcast />}
-        {activeTab === 'foodstaff' && <FoodStaff />}
-        {activeTab === 'rooms' && <Rooms />}
-        {activeTab === 'students' && <Students />}
-        {activeTab === 'complaints' && <Complaints />}
+        {activeTab === 'approvals' && <Approvals onBack={() => setActiveTab('overview')} onApproved={() => setActiveTab('rooms')} />}
+        {activeTab === 'broadcast' && <Broadcast onBack={() => setActiveTab('overview')} />}
+        {activeTab === 'foodstaff' && <FoodStaff onBack={() => setActiveTab('overview')} />}
+        {activeTab === 'rooms' && <Rooms onBack={() => setActiveTab('overview')} />}
+        {activeTab === 'students' && <Students onBack={() => setActiveTab('overview')} />}
+        {activeTab === 'complaints' && <Complaints onBack={() => setActiveTab('overview')} />}
 
         {/* Placeholders for other tabs for now */}
       </main>

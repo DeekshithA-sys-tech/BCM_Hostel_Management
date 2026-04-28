@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
-import { MessageCircle, AlertCircle } from 'lucide-react';
+import { MessageCircle, AlertCircle, ArrowLeft } from 'lucide-react';
 
-const Complaints = () => {
+const Complaints = ({ onBack }) => {
     const [complaints, setComplaints] = useState([]);
     const [formData, setFormData] = useState({ subject: '', category: 'maintenance', priority: 'medium', description: '' });
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -43,6 +43,11 @@ const Complaints = () => {
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+            {onBack && (
+                <button onClick={onBack} className="btn btn-secondary" style={{ alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <ArrowLeft size={16} /> Back to Overview
+                </button>
+            )}
             <div className="glass-panel" style={{ padding: '2rem' }}>
                 <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--brand-secondary)', marginBottom: '1.5rem' }}>
                     <MessageCircle size={24} /> Lodge a Complaint

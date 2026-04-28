@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
-import { Users, Bed, Mail, Phone } from 'lucide-react';
+import { Users, Bed, Mail, Phone, ArrowLeft } from 'lucide-react';
 
-const RoomDetails = ({ roomId }) => {
+const RoomDetails = ({ roomId, onBack }) => {
     const [roomInfo, setRoomInfo] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -40,6 +40,11 @@ const RoomDetails = ({ roomId }) => {
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+            {onBack && (
+                <button onClick={onBack} className="btn btn-secondary" style={{ alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <ArrowLeft size={16} /> Back to Overview
+                </button>
+            )}
             <div className="glass-panel" style={{ padding: '2rem' }}>
                 <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0, color: 'var(--brand-primary)' }}>
                     <Bed size={24} /> Room {roomInfo.roomNumber} Overview

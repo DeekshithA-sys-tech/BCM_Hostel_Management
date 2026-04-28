@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
+import { ArrowLeft } from 'lucide-react';
 import './student.css';
 
-const Profile = ({ studentInfo, onProfileUpdate }) => {
+const Profile = ({ studentInfo, onProfileUpdate, onBack }) => {
   const [formData, setFormData] = useState({
     sspId: '',
     dateOfBirth: '',
@@ -90,6 +91,11 @@ const Profile = ({ studentInfo, onProfileUpdate }) => {
 
   return (
     <div className="glass-panel" style={{ padding: '2rem' }}>
+      {onBack && (
+        <button onClick={onBack} className="btn btn-secondary" style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <ArrowLeft size={16} /> Back to Overview
+        </button>
+      )}
       <h2 style={{ marginBottom: '1rem', color: 'var(--brand-secondary)' }}>Complete Your Enrollment</h2>
       <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>
         Status: <strong style={{ color: studentInfo?.verificationStatus === 'approved' ? 'var(--success)' : 'var(--warning)' }}>

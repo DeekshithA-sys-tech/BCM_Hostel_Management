@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
-import { Bed, UserPlus, Trash2, Plus } from 'lucide-react';
+import { Bed, UserPlus, Trash2, Plus, ArrowLeft } from 'lucide-react';
 
-const Rooms = () => {
+const Rooms = ({ onBack }) => {
     const [rooms, setRooms] = useState([]);
     const [unassignedStudents, setUnassignedStudents] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -15,12 +15,12 @@ const Rooms = () => {
             setLoading(true);
             const [roomsRes, studentsRes] = await Promise.all([
                 api.get('/rooms'),
-                api.get('/students?status=approved&limit=100') // fetch chunk of approved students
+                api.get('/students?status=approved&limit=100')
             ]);
             
             setRooms(roomsRes.data.data.rooms || []);
             
-            // Filter students without a cotId organically
+            // Filter students without a cotId
             const unassigned = (studentsRes.data.data || []).filter(s => !s.cotId);
             setUnassignedStudents(unassigned);
         } catch (err) {
@@ -46,7 +46,6 @@ const Rooms = () => {
     };
 
     const handleDeallocate = async (studentId) => {
-        if (!window.confirm('Remove student from this cot?')) return;
         try {
             await api.post('/rooms/deallocate', { studentId });
             fetchData();
@@ -73,6 +72,11 @@ const Rooms = () => {
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+            {/* Back Button */}
+            <button onClick={onBack} className="btn btn-secondary" style={{ alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <ArrowLeft size={16} /> Back to Overview
+            </button>
+
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <h2 style={{ color: 'var(--brand-primary)', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <Bed size={24} /> Room Matrix

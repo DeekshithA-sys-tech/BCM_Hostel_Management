@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
-import { Coffee, Users, Save, Plus } from 'lucide-react';
+import { Coffee, Users, Save, Plus, ArrowLeft } from 'lucide-react';
 
-const FoodStaff = () => {
+const FoodStaff = ({ onBack }) => {
     const [schedule, setSchedule] = useState([]);
     const [staff, setStaff] = useState([]);
-    const [activeView, setActiveView] = useState('food'); // food | staff
+    const [activeView, setActiveView] = useState('staff'); // Default to staff view since Add Staff btn from overview lands here
 
     const [isSaving, setIsSaving] = useState(false);
     const [message, setMessage] = useState('');
     
     const [newStaff, setNewStaff] = useState({ name: '', role: '', mobile: '' });
-    const [isAddingStaff, setIsAddingStaff] = useState(false);
+    const [isAddingStaff, setIsAddingStaff] = useState(true); // Default open so Add Staff from overview is ready
 
     const fetchFood = async () => {
         try {
@@ -79,12 +79,17 @@ const FoodStaff = () => {
             setMessage('Staff added successfully!');
         } catch (err) {
             console.error(err);
-            setMessage('Error adding staff');
+            setMessage(err.response?.data?.message || 'Error adding staff');
         }
     };
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+            {/* Back Button */}
+            <button onClick={onBack} className="btn btn-secondary" style={{ alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <ArrowLeft size={16} /> Back to Overview
+            </button>
+
             <div style={{ display: 'flex', gap: '1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '1rem' }}>
                 <button 
                   onClick={() => setActiveView('food')} 
@@ -146,15 +151,15 @@ const FoodStaff = () => {
             {activeView === 'staff' && (
                 <div className="glass-panel" style={{ padding: '2rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                        <h2 style={{ margin: 0, color: 'var(--brand-secondary)' }}>Staff Roster</h2>
+                        <h2 style={{ margin: 0, color: 'var(--brand-secondary)' }}>Staff Roster ({staff.length})</h2>
                         <button onClick={() => setIsAddingStaff(!isAddingStaff)} className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                             <Plus size={18} /> {isAddingStaff ? 'Cancel' : 'Add Staff'}
                         </button>
                     </div>
 
                     {isAddingStaff && (
-                        <div style={{ background: 'var(--bg-secondary)', padding: '1.5rem', borderRadius: '8px', marginBottom: '2rem' }}>
-                            <h3 style={{ marginTop: 0, color: 'var(--text-primary)' }}>Register New Staff</h3>
+                        <div style={{ background: 'var(--bg-secondary)', padding: '1.5rem', borderRadius: '8px', marginBottom: '2rem', border: '1px solid var(--border-color)' }}>
+                            <h3 style={{ marginTop: 0, color: 'var(--text-primary)' }}>Register New Staff Member</h3>
                             <form onSubmit={handleAddStaff} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: '1rem', alignItems: 'end' }}>
                                 <div>
                                     <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Full Name</label>
@@ -174,13 +179,13 @@ const FoodStaff = () => {
                     )}
 
                     {staff.length === 0 ? (
-                        <p style={{ color: 'var(--text-muted)' }}>No staff members registered.</p>
+                        <p style={{ color: 'var(--text-muted)' }}>No staff members registered. Use the Add Staff button above to register the first one.</p>
                     ) : (
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '1rem' }}>
                             {staff.map(s => (
-                                <div key={s._id} style={{ padding: '1rem', background: 'var(--bg-secondary)', borderRadius: '8px' }}>
+                                <div key={s._id} style={{ padding: '1rem', background: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
                                     <h3 style={{ margin: 0, color: 'var(--text-primary)' }}>{s.name}</h3>
-                                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '0.5rem' }}>{s.role}</p>
+                                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '0.5rem', marginTop: '0.25rem' }}>{s.role}</p>
                                     <p style={{ margin: 0, fontSize: '0.9rem' }}>📞 {s.mobile}</p>
                                 </div>
                             ))}
@@ -193,4 +198,3 @@ const FoodStaff = () => {
 };
 
 export default FoodStaff;
-

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
-import { Coffee } from 'lucide-react';
+import { Coffee, ArrowLeft } from 'lucide-react';
 
-const FoodSchedule = () => {
+const FoodSchedule = ({ onBack }) => {
     const [schedule, setSchedule] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -26,6 +26,11 @@ const FoodSchedule = () => {
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+            {onBack && (
+                <button onClick={onBack} className="btn btn-secondary" style={{ alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <ArrowLeft size={16} /> Back to Overview
+                </button>
+            )}
             <div className="glass-panel" style={{ padding: '2rem' }}>
                 <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--brand-secondary)', marginBottom: '1.5rem' }}>
                     <Coffee size={24} /> Weekly Mess Schedule
