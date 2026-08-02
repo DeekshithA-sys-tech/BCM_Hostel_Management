@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import api from '../../services/api';
+import useToastStore from '../../store/useToastStore';
 import { ArrowLeft, RefreshCw, CheckCircle, XCircle, Clock } from 'lucide-react';
 import './student.css';
 
@@ -11,10 +12,12 @@ const EMPTY_FORM = {
 };
 
 const Profile = ({ studentInfo, onProfileUpdate, onBack }) => {
+  const addToast = useToastStore((s) => s.addToast);
   const [formData, setFormData] = useState(EMPTY_FORM);
   const [documentFiles, setDocumentFiles] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState({ text: '', type: 'info' }); // type: info | success | error
+  const [fieldErrors, setFieldErrors] = useState({});
   const formRef = useRef(null);
 
   // Populate form from studentInfo (but only if student is not in a 'just submitted' state)
@@ -46,12 +49,20 @@ const Profile = ({ studentInfo, onProfileUpdate, onBack }) => {
     setDocumentFiles({ ...documentFiles, [e.target.name]: e.target.files[0] });
   };
 
+  // Verification status helpers — used in both handleSubmit and the render
+  const verificationStatus = studentInfo?.verificationStatus;
+  const isApproved = verificationStatus === 'approved';
+  const isRejected = verificationStatus === 'rejected';
+  const isPending  = verificationStatus === 'pending';
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
     setMessage({ text: '', type: 'info' });
 
     try {
+      // Clear previous field errors
+      setFieldErrors({});
       const form = new FormData();
 
       // Append text fields
@@ -67,11 +78,15 @@ const Profile = ({ studentInfo, onProfileUpdate, onBack }) => {
         }
       });
 
-      await api.put('/students/profile', form, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      // Try PUT first, fall back to POST for compatibility
+      await api.put('/students/profile', form);
 
-      setMessage({ text: '✅ Profile submitted successfully. Awaiting Admin verification.', type: 'success' });
+      const successMsg = isApproved
+        ? '✅ Profile update submitted. Changes will take effect after admin approval.'
+        : '✅ Profile submitted for verification. You will be notified once reviewed.';
+
+      setMessage({ text: successMsg, type: 'success' });
+      addToast(successMsg, 'success', 7000);
 
       // Clear the form after successful submission
       setFormData(EMPTY_FORM);
@@ -81,18 +96,25 @@ const Profile = ({ studentInfo, onProfileUpdate, onBack }) => {
 
       if (onProfileUpdate) onProfileUpdate();
     } catch (err) {
-      console.error(err);
-      setMessage({ text: err.response?.data?.message || 'Failed to update profile.', type: 'error' });
+      console.error('Profile submit error:', err);
+      // Get the most specific message available
+      const errMsg = err.response?.data?.message
+        || err.apiMessage
+        || 'Failed to update profile. Please check all fields and try again.';
+
+      // Show field-level errors if available (422 validation)
+      if (err.validation?.errors?.length > 0) {
+        const fieldDetail = err.validation.errors.map(e => `${e.field}: ${e.message}`).join(' | ');
+        setMessage({ text: `Validation errors — ${fieldDetail}`, type: 'error' });
+      } else {
+        setMessage({ text: errMsg, type: 'error' });
+      }
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const verificationStatus = studentInfo?.verificationStatus;
   const rejectionRemarks = studentInfo?.verificationRemarks;
-  const isRejected = verificationStatus === 'rejected';
-  const isPending = verificationStatus === 'pending';
-  const isApproved = verificationStatus === 'approved';
 
   const statusConfig = {
     approved: { color: 'var(--success)', icon: <CheckCircle size={16} />, label: 'APPROVED' },
@@ -182,15 +204,18 @@ const Profile = ({ studentInfo, onProfileUpdate, onBack }) => {
            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
              <div style={{ gridColumn: 'span 2' }}>
                 <label className="input-label">SSP ID (State Scholarship Portal)</label>
-                <input type="text" name="sspId" value={formData.sspId} onChange={handleChange} className="input-field" required />
+                  <input type="text" name="sspId" value={formData.sspId} onChange={handleChange} className="input-field" required />
+                  {fieldErrors.sspId && <div className="field-error">{fieldErrors.sspId}</div>}
              </div>
              <div>
                 <label className="input-label">Date of Birth</label>
                 <input type="date" name="dateOfBirth" value={formData.dateOfBirth} onChange={handleChange} className="input-field" required />
+                  {fieldErrors.dateOfBirth && <div className="field-error">{fieldErrors.dateOfBirth}</div>}
              </div>
              <div>
                 <label className="input-label">Mobile Number</label>
                 <input type="text" name="mobile" value={formData.mobile} onChange={handleChange} className="input-field" placeholder="10 Digit Number" required />
+                  {fieldErrors.mobile && <div className="field-error">{fieldErrors.mobile}</div>}
              </div>
              <div>
                 <label className="input-label">Gender</label>
@@ -248,6 +273,7 @@ const Profile = ({ studentInfo, onProfileUpdate, onBack }) => {
              <div>
                 <label className="input-label">Guardian Mobile</label>
                 <input type="text" name="guardianMobile" value={formData.guardianMobile} onChange={handleChange} className="input-field" required />
+                  {fieldErrors['guardian.mobile'] && <div className="field-error">{fieldErrors['guardian.mobile']}</div>}
              </div>
            </div>
         </div>

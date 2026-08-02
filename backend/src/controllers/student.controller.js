@@ -75,11 +75,26 @@ const getMyProfile = async (req, res, next) => {
     try {
         const student = await Student.findOne({ userId: req.user._id })
             .populate('userId', 'name email createdAt')
-            .populate('cotId');
+            .populate({
+                path: 'cotId',
+                populate: { path: 'roomId', select: 'roomNumber block floor' }
+            });
 
-        if (!student) throw ApiError.notFound('Student profile');
+        if (!student) {
+            // Student profile not created yet — return a flag so frontend can redirect to profile setup
+            return ApiResponse.success(res, {
+                student: null,
+                needsProfile: true,
+                user: {
+                    _id: req.user._id,
+                    name: req.user.name,
+                    email: req.user.email
+                }
+            }, 'Student profile not yet created. Please complete your profile.');
+        }
 
-        ApiResponse.success(res, { student });
+        const documents = await Document.find({ studentId: student._id });
+        ApiResponse.success(res, { student, documents });
     } catch (err) {
         next(err);
     }
@@ -131,18 +146,25 @@ const uploadDocument = async (req, res, next) => {
         if (!student) throw ApiError.notFound('Student profile');
 
         const { type } = req.body;
-        // Convert the buffer to a base64 encoded data URI
-        const fileData = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+        let updateObj = {
+            fileName: req.file.originalname,
+            fileSize: req.file.size,
+            mimeType: req.file.mimetype,
+            isVerified: false
+        };
+
+        // If multer used memoryStorage, buffer will be present — store as base64
+        if (req.file?.buffer) {
+            updateObj.fileData = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+        } else if (req.file?.path) {
+            // Disk storage: expose via /uploads/<userId>/<filename>
+            const userId = req.user._id;
+            updateObj.fileUrl = `/uploads/${userId}/${req.file.filename}`;
+        }
 
         const doc = await Document.findOneAndUpdate(
             { studentId: student._id, type },
-            {
-                fileData,
-                fileName: req.file.originalname,
-                fileSize: req.file.size,
-                mimeType: req.file.mimetype,
-                isVerified: false
-            },
+            updateObj,
             { upsert: true, new: true }
         );
 
@@ -156,7 +178,15 @@ const updateStudentProfile = async (req, res, next) => {
     try {
         const userId = req.user._id;
         let student = await Student.findOne({ userId });
-        if (!student) throw ApiError.notFound('Student profile');
+
+        // Auto-create student profile if registration didn't complete it
+        if (!student) {
+            const { sspId } = req.body;
+            if (!sspId) {
+                return next(ApiError.badRequest('SSP ID is required to create your profile for the first time'));
+            }
+            student = await Student.create({ userId, sspId: sspId.toUpperCase() });
+        }
 
         const {
             dateOfBirth, gender, bloodGroup, mobile, institution, course, year, rollNumber, sspId,
@@ -172,15 +202,15 @@ const updateStudentProfile = async (req, res, next) => {
         if (course) updates.course = course;
         if (year) updates.year = year;
         if (rollNumber) updates.rollNumber = rollNumber;
-        if (sspId) updates.sspId = sspId;
-        
+        if (sspId) updates.sspId = sspId.toUpperCase();
+
         if (guardianName || guardianMobile) {
             updates.guardian = {
                 name: guardianName || student.guardian?.name,
                 mobile: guardianMobile || student.guardian?.mobile
             };
         }
-        
+
         if (street || city || state || pincode) {
             updates.address = {
                 street: street || student.address?.street,
@@ -205,6 +235,114 @@ const updateStudentProfile = async (req, res, next) => {
             ).populate('userId', 'name email');
         }
 
+        // Map upload field names to valid Document type enum values
+        const FIELD_TO_DOCTYPE = {
+            aadhar: 'aadhaar',
+            aadhaar: 'aadhaar',
+            admission_letter: 'other',
+            income_certificate: 'income_certificate',
+            caste_certificate: 'caste_certificate',
+            sslc: 'other',
+            puc: 'other',
+            photo: 'photo',
+            bank_passbook: 'bank_passbook'
+        };
+
+        // Handle uploaded documents
+        if (req.files && Object.keys(req.files).length > 0) {
+            const docPromises = Object.keys(req.files).map(async (fieldname) => {
+                const files = req.files[fieldname];
+                const file = Array.isArray(files) ? files[0] : files;
+                if (!file) return null;
+
+                const docType = FIELD_TO_DOCTYPE[fieldname] || 'other';
+
+                const updateObj = {
+                    fileName: file.originalname,
+                    fileSize: file.size,
+                    mimeType: file.mimetype,
+                    isVerified: false
+                };
+
+                if (file?.buffer) {
+                    updateObj.fileData = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
+                } else if (file?.path) {
+                    updateObj.fileUrl = `/uploads/${userId}/${path.basename(file.path)}`;
+                }
+
+                return Document.findOneAndUpdate(
+                    { studentId: student._id, type: docType },
+                    updateObj,
+                    { upsert: true, new: true }
+                );
+            });
+            await Promise.all(docPromises);
+        }
+
+        const documents = await Document.find({ studentId: student._id });
+
+        // Emit real-time socket notification to all admins about new/updated approval request
+        try {
+            const { emitToAdmins } = require('../socket');
+            emitToAdmins('approval:new', {
+                studentId: student._id,
+                name: req.user.name,
+                email: req.user.email,
+                type: student.verificationStatus === 'approved' ? 'update' : 'new'
+            });
+        } catch (e) {
+            console.error('Socket emit error:', e.message);
+        }
+
+        ApiResponse.success(res, { student, documents }, 'Profile submitted for verification. Pending admin review.');
+    } catch (err) {
+        next(err);
+    }
+};
+
+/**
+ * Create student profile (initial submission)
+ */
+const createStudentProfile = async (req, res, next) => {
+    try {
+        const userId = req.user._id;
+        let student = await Student.findOne({ userId });
+        if (student) throw ApiError.conflict('Student profile already exists');
+
+        const {
+            dateOfBirth, gender, bloodGroup, mobile, institution, course, year, rollNumber, sspId,
+            guardianName, guardianMobile, street, city, state, pincode
+        } = req.body;
+
+        const studentObj = { userId };
+        if (sspId) studentObj.sspId = sspId;
+        if (dateOfBirth) studentObj.dateOfBirth = dateOfBirth;
+        if (gender) studentObj.gender = gender;
+        if (bloodGroup) studentObj.bloodGroup = bloodGroup;
+        if (mobile) studentObj.mobile = mobile;
+        if (institution) studentObj.institution = institution;
+        if (course) studentObj.course = course;
+        if (year) studentObj.year = year;
+        if (rollNumber) studentObj.rollNumber = rollNumber;
+
+        if (guardianName || guardianMobile) {
+            studentObj.guardian = {
+                name: guardianName || undefined,
+                mobile: guardianMobile || undefined
+            };
+        }
+
+        if (street || city || state || pincode) {
+            studentObj.address = {
+                street: street || undefined,
+                city: city || undefined,
+                state: state || undefined,
+                pincode: pincode || undefined
+            };
+        }
+
+        student = await Student.create(studentObj);
+
         // Handle uploaded documents
         if (req.files) {
             const docPromises = Object.keys(req.files).map(async (fieldname) => {
@@ -227,7 +365,7 @@ const updateStudentProfile = async (req, res, next) => {
 
         const documents = await Document.find({ studentId: student._id });
 
-        ApiResponse.success(res, { student, documents }, 'Profile and documents updated');
+        ApiResponse.created(res, { student, documents }, 'Profile created');
     } catch (err) {
         next(err);
     }
@@ -254,4 +392,4 @@ const deleteStudent = async (req, res, next) => {
     }
 };
 
-module.exports = { getStudents, getStudent, getMyProfile, updateStudent, uploadDocument, updateStudentProfile, deleteStudent };
+module.exports = { getStudents, getStudent, getMyProfile, updateStudent, uploadDocument, updateStudentProfile, createStudentProfile, deleteStudent };

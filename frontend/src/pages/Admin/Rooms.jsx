@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
+import useToastStore from '../../store/useToastStore';
 import { Bed, UserPlus, Trash2, Plus, ArrowLeft } from 'lucide-react';
 
 const Rooms = ({ onBack }) => {
+    const addToast = useToastStore((s) => s.addToast);
     const [rooms, setRooms] = useState([]);
     const [unassignedStudents, setUnassignedStudents] = useState([]);
     const [loading, setLoading] = useState(true);
 
     const [isAddingRoom, setIsAddingRoom] = useState(false);
     const [newRoom, setNewRoom] = useState({ roomNumber: '', floor: '', block: '', totalCots: 2 });
+    const [fieldErrors, setFieldErrors] = useState({});
 
     const fetchData = async () => {
         try {
@@ -38,33 +41,38 @@ const Rooms = ({ onBack }) => {
         if (!studentId) return;
         try {
             await api.post('/rooms/allocate', { cotId, studentId });
+            addToast('Student allocated to cot successfully!', 'success');
             fetchData();
         } catch (err) {
+            addToast(err.response?.data?.message || err.apiMessage || 'Failed to allocate student.', 'error');
             console.error(err);
-            alert(err.response?.data?.message || 'Failed to allocate student');
         }
     };
 
     const handleDeallocate = async (studentId) => {
         try {
             await api.post('/rooms/deallocate', { studentId });
+            addToast('Student removed from cot.', 'success');
             fetchData();
         } catch (err) {
+            addToast(err.response?.data?.message || err.apiMessage || 'Failed to deallocate student.', 'error');
             console.error(err);
-            alert('Failed to deallocate student');
         }
     };
 
     const handleCreateRoom = async (e) => {
         e.preventDefault();
+        setFieldErrors({});
         try {
             await api.post('/rooms', newRoom);
+            addToast(`Room ${newRoom.roomNumber} created successfully!`, 'success');
             setIsAddingRoom(false);
             setNewRoom({ roomNumber: '', floor: '', block: '', totalCots: 2 });
             fetchData();
         } catch (err) {
+            addToast(err.response?.data?.message || err.apiMessage || 'Failed to create room.', 'error');
             console.error(err);
-            alert(err.response?.data?.message || 'Failed to create room');
+            if (err.validation?.fieldMap) setFieldErrors(err.validation.fieldMap);
         }
     };
 
@@ -92,7 +100,8 @@ const Rooms = ({ onBack }) => {
                     <form onSubmit={handleCreateRoom} style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'end' }}>
                         <div>
                             <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Room Number</label>
-                            <input type="text" className="input-field" value={newRoom.roomNumber} onChange={(e) => setNewRoom({...newRoom, roomNumber: e.target.value})} required placeholder="E.g. 101" />
+                                    <input type="text" className="input-field" value={newRoom.roomNumber} onChange={(e) => setNewRoom({...newRoom, roomNumber: e.target.value})} required placeholder="E.g. 101" />
+                                    {fieldErrors.roomNumber && <div className="field-error">{fieldErrors.roomNumber}</div>}
                         </div>
                         <div>
                             <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Floor</label>
@@ -105,6 +114,7 @@ const Rooms = ({ onBack }) => {
                         <div>
                             <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Total Cots</label>
                             <input type="number" className="input-field" value={newRoom.totalCots} min="1" max="10" onChange={(e) => setNewRoom({...newRoom, totalCots: parseInt(e.target.value)})} required />
+                            {fieldErrors.totalCots && <div className="field-error">{fieldErrors.totalCots}</div>}
                         </div>
                         <button type="submit" className="btn btn-primary">Save Room</button>
                     </form>

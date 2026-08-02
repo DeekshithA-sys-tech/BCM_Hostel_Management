@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/useAuthStore';
+import useToastStore from '../../store/useToastStore';
 import { LogIn, UserPlus } from 'lucide-react';
 import './auth.css';
 
 const Auth = () => {
   const navigate = useNavigate();
   const { login, register, isLoading, error } = useAuthStore();
+  const addToast = useToastStore((s) => s.addToast);
+  const [fieldErrors, setFieldErrors] = useState({});
   const [isLogin, setIsLogin] = useState(true);
   
   const [formData, setFormData] = useState({ 
@@ -30,6 +33,7 @@ const Auth = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setFieldErrors({});
     try {
       if (isLogin) {
         const data = await login({ email: formData.email, password: formData.password });
@@ -40,12 +44,13 @@ const Auth = () => {
         }
       } else {
         await register(formData);
-        // Switch to login view on successful registration with empty fields
+        addToast('Registration successful! Please login with your credentials.', 'success', 7000);
         setFormData(EMPTY_FORM);
         setIsLogin(true);
       }
     } catch (err) {
       console.error(err);
+      if (err.validation?.fieldMap) setFieldErrors(err.validation.fieldMap);
     }
   };
 
@@ -84,6 +89,7 @@ const Auth = () => {
                   onChange={handleChange}
                   required 
                 />
+                  {fieldErrors.name && <div className="field-error">{fieldErrors.name}</div>}
               </div>
 
               <div className="input-group">
@@ -98,6 +104,7 @@ const Auth = () => {
                   onChange={handleChange}
                   required 
                 />
+                  {fieldErrors.sspId && <div className="field-error">{fieldErrors.sspId}</div>}
               </div>
             </>
           )}
@@ -114,6 +121,7 @@ const Auth = () => {
               onChange={handleChange}
               required 
             />
+            {fieldErrors.email && <div className="field-error">{fieldErrors.email}</div>}
           </div>
 
           <div className="input-group">
@@ -128,6 +136,7 @@ const Auth = () => {
               onChange={handleChange}
               required 
             />
+            {fieldErrors.password && <div className="field-error">{fieldErrors.password}</div>}
             {!isLogin && <small style={{color: 'var(--text-muted)'}}>Must contain uppercase, lowercase & number.</small>}
           </div>
 

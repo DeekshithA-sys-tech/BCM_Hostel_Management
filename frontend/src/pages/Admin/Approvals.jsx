@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import api from '../../services/api';
+import useToastStore from '../../store/useToastStore';
 import { Check, X, FileText, ArrowLeft, ExternalLink } from 'lucide-react';
 
 const Approvals = ({ onBack, onApproved }) => {
+  const addToast = useToastStore((s) => s.addToast);
   const [pending, setPending] = useState([]);
   const [loading, setLoading] = useState(true);
   const [confirmState, setConfirmState] = useState({ id: null, action: null, remarks: '' });
@@ -37,22 +39,16 @@ const Approvals = ({ onBack, onApproved }) => {
         action,
         remarks: remarks || (action === 'approve' ? 'Verification successful' : 'Details rejected')
       });
+      addToast(
+        action === 'approve' ? 'Student approved successfully!' : 'Student application rejected.',
+        action === 'approve' ? 'success' : 'warning'
+      );
       setConfirmState({ id: null, action: null, remarks: '' });
       fetchPending();
-      if (action === 'approve' && onApproved) {
-        onApproved(); // Navigate to room layout after approval
-      }
+      if (action === 'approve' && onApproved) onApproved();
     } catch (err) {
+      addToast(err.response?.data?.message || err.apiMessage || 'Action failed. Please try again.', 'error');
       console.error(err);
-      // Try alternate endpoint
-      try {
-        await api.put(`/admin/students/verify/${id}`, { action, remarks });
-        setConfirmState({ id: null, action: null, remarks: '' });
-        fetchPending();
-        if (action === 'approve' && onApproved) onApproved();
-      } catch (e) {
-        console.error(e);
-      }
     } finally {
       setIsProcessing(false);
     }

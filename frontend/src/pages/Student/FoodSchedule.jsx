@@ -1,26 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
-import { Coffee, ArrowLeft } from 'lucide-react';
+import { Coffee, ArrowLeft, Users, Phone } from 'lucide-react';
 
 const FoodSchedule = ({ onBack }) => {
     const [schedule, setSchedule] = useState([]);
+    const [staff, setStaff] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const fetchFood = async () => {
+        const fetchFoodAndStaff = async () => {
             try {
-                const res = await api.get('/food');
-                setSchedule(res.data.data.schedule || []);
+                const [foodRes, staffRes] = await Promise.allSettled([
+                    api.get('/food'),
+                    api.get('/staff')
+                ]);
+                
+                if (foodRes.status === 'fulfilled') {
+                    setSchedule(foodRes.value.data.data.schedule || []);
+                }
+                if (staffRes.status === 'fulfilled') {
+                    setStaff(staffRes.value.data.data.staff || []);
+                }
             } catch (err) {
                 console.error(err);
             } finally {
                 setLoading(false);
             }
         };
-        fetchFood();
+        fetchFoodAndStaff();
     }, []);
 
-    if (loading) return <div style={{ padding: '2rem' }}>Loading menu...</div>;
+    if (loading) return <div style={{ padding: '2rem', color: 'var(--text-muted)' }}>Loading menu and staff details...</div>;
 
     const todayDate = new Date().toLocaleDateString('en-US', { weekday: 'long' });
 
@@ -66,6 +76,38 @@ const FoodSchedule = ({ onBack }) => {
                         );
                     })}
                 </div>
+
+                {/* Mess & Hostel Staff Roster Section */}
+                <div style={{ marginTop: '3rem', borderTop: '1px solid var(--border-color)', paddingTop: '2rem' }}>
+                    <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--brand-primary)', marginBottom: '1rem' }}>
+                        <Users size={20} /> Mess & Support Staff
+                    </h3>
+                    {staff.length === 0 ? (
+                        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>No staff listed.</p>
+                    ) : (
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '1rem' }}>
+                            {staff.map(s => (
+                                <div key={s._id} style={{
+                                    padding: '1rem',
+                                    background: 'var(--bg-secondary)',
+                                    borderRadius: '8px',
+                                    border: '1px solid var(--border-color)'
+                                }}>
+                                    <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{s.name}</div>
+                                    <div style={{ fontSize: '0.78rem', color: 'var(--brand-secondary)', fontWeight: 600, textTransform: 'uppercase', marginTop: '0.2rem' }}>
+                                        {s.role}
+                                    </div>
+                                    {s.mobile && (
+                                        <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                            <Phone size={13} color="var(--success)" /> {s.mobile}
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
             </div>
         </div>
     );

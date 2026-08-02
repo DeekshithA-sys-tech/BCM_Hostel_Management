@@ -68,6 +68,21 @@ const verifyStudent = async (req, res, next) => {
         await student.save();
         await student.populate('userId', 'name email');
 
+        // Real-time socket notification to the student
+        try {
+            const { emitToUser } = require('../socket');
+            const targetUserId = student.userId?._id || student.userId;
+            if (targetUserId) {
+                emitToUser(targetUserId.toString(), 'profile:verified', {
+                    status,
+                    remarks,
+                    studentId: student._id
+                });
+            }
+        } catch (e) {
+            console.error('Socket emit error:', e.message);
+        }
+
         // Email notification (non-blocking)
         if (student.userId?.email) {
             sendVerificationUpdate(student.userId.email, student.userId.name, status, remarks).catch(() => { });

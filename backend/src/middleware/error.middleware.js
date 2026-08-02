@@ -21,7 +21,7 @@ const errorHandler = (err, req, res, next) => {
             field: e.path,
             message: e.message
         }));
-        error = ApiError.badRequest('Validation failed', errors);
+        error = ApiError.validation('Validation failed', errors);
     }
 
     if (err.name === 'JsonWebTokenError') {
@@ -45,16 +45,24 @@ const errorHandler = (err, req, res, next) => {
 
     if (statusCode >= 500) {
         logger.error(`[${req.method}] ${req.path} - ${statusCode}: ${message}`, { stack: err.stack });
+    } else if (statusCode >= 400) {
+        logger.warn(`[${req.method}] ${req.path} - ${statusCode}: ${message}`);
     }
 
-    res.status(statusCode).json({
+    const payload = {
         success: false,
         statusCode,
         message,
         errors: error.errors || [],
-        ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
         timestamp: new Date().toISOString()
-    });
+    };
+
+    // Provide a `details` key for clients expecting rich validation info
+    if (error.errors && error.errors.length) payload.details = error.errors;
+
+    if (process.env.NODE_ENV === 'development') payload.stack = err.stack;
+
+    res.status(statusCode).json(payload);
 };
 
 module.exports = errorHandler;

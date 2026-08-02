@@ -18,7 +18,23 @@ if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-const storage = multer.memoryStorage();
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        try {
+            // put uploads in uploads/<userId> when available, else in uploads/misc
+            const userId = req.user?._id || 'misc';
+            const dest = path.join(uploadDir, String(userId));
+            if (!fs.existsSync(dest)) fs.mkdirSync(dest, { recursive: true });
+            cb(null, dest);
+        } catch (err) {
+            cb(err);
+        }
+    },
+    filename: (req, file, cb) => {
+        const safeName = `${Date.now()}-${Math.round(Math.random()*1e9)}-${file.originalname.replace(/[^a-zA-Z0-9._-]/g,'')}`;
+        cb(null, safeName);
+    }
+});
 
 const fileFilter = (req, file, cb) => {
     if (ALLOWED_MIME_TYPES.includes(file.mimetype)) {

@@ -36,12 +36,16 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
+const isDev = process.env.NODE_ENV !== 'production';
+
+// General API limiter — much higher in dev to avoid false 429s during development
 const limiter = rateLimit({
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
-    max: parseInt(process.env.RATE_LIMIT_MAX) || 100,
+    max: isDev ? 2000 : (parseInt(process.env.RATE_LIMIT_MAX) || 100),
     standardHeaders: true,
     legacyHeaders: false,
-    message: { success: false, message: 'Too many requests, please try again later.' }
+    skip: (req) => isDev && req.path.startsWith('/api/v1/auth/me'), // never rate-limit token checks in dev
+    message: { success: false, message: 'Too many requests. Please slow down.' }
 });
 app.use('/api/', limiter);
 

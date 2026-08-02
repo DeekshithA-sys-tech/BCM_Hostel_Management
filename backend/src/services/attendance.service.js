@@ -44,7 +44,7 @@ const markBulkAttendance = async (records, markedBy) => {
  * Get attendance summary for a student over a date range.
  */
 const getStudentSummary = async (studentId, startDate, endDate) => {
-    const match = { studentId: require('mongoose').Types.ObjectId(studentId) };
+    const match = { studentId: new require('mongoose').Types.ObjectId(studentId) };
     if (startDate || endDate) {
         match.date = {};
         if (startDate) match.date.$gte = new Date(startDate);

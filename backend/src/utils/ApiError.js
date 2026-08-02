@@ -17,6 +17,10 @@ class ApiError extends Error {
         return new ApiError(400, message, errors);
     }
 
+    static validation(message = 'Validation failed', errors = []) {
+        return new ApiError(422, message, errors);
+    }
+
     static unauthorized(message = 'Unauthorized') {
         return new ApiError(401, message);
     }
@@ -35,6 +39,11 @@ class ApiError extends Error {
 
     static internal(message = 'Internal server error') {
         return new ApiError(500, message);
+    }
+
+    // Alias for validate middleware compatibility
+    static validation(message = 'Validation failed', errors = []) {
+        return new ApiError(422, message, errors);
     }
 }
 

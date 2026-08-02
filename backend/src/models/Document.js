@@ -14,9 +14,9 @@ const documentSchema = new mongoose.Schema(
             required: true
         },
         fileData: {
-            type: String, // Store Base64 directly
-            required: true
+            type: String // Base64 data if stored in DB (optional)
         },
+        fileUrl: { type: String },
         fileName: { type: String },
         fileSize: { type: Number },
         mimeType: { type: String },

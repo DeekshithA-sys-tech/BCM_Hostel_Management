@@ -1,8 +1,10 @@
 require('dotenv').config();
+const http = require('http');
 const app = require('./app');
 const connectDB = require('./config/db');
 const logger = require('./utils/logger');
 const { seedAdmin } = require('./utils/seeder');
+const { initSocket } = require('./socket');
 
 const PORT = process.env.PORT || 5000;
 
@@ -10,9 +12,16 @@ const startServer = async () => {
   await connectDB();
   await seedAdmin();
 
-  const server = app.listen(PORT, () => {
+  // Create HTTP server so Socket.io can attach to it
+  const server = http.createServer(app);
+
+  // Initialize Socket.io
+  initSocket(server);
+
+  server.listen(PORT, () => {
     logger.info(`🚀 Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
     logger.info(`📚 API Docs: http://localhost:${PORT}/api/v1/docs`);
+    logger.info(`🔌 WebSocket: ws://localhost:${PORT}`);
   });
 
   // Graceful shutdown

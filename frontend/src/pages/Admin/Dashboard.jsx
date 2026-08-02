@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuthStore } from '../../store/useAuthStore';
-import { LogOut, Users, Bed, CheckSquare, Bell, UserPlus, Home, Coffee } from 'lucide-react';
+import useToastStore from '../../store/useToastStore';
+import { LogOut, Users, Bed, CheckSquare, Bell, UserPlus, Home, Coffee, MessageSquare } from 'lucide-react';
 import api from '../../services/api';
 import './admin.css';
 import Approvals from './Approvals';
@@ -12,20 +13,89 @@ import Complaints from './Complaints';
 
 const AdminDashboard = () => {
   const { user, logout } = useAuthStore();
+  const addToast = useToastStore((s) => s.addToast);
   const [stats, setStats] = useState({ totalStudents: 0, pendingApprovals: 0 });
   const [activeTab, setActiveTab] = useState('overview');
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const response = await api.get('/dashboard/stats');
-        setStats(response.data.data);
-      } catch (err) {
-        console.error("Failed to fetch stats", err);
+  // WhatsApp-style real-time unread badge counters
+  const [unreadApprovals, setUnreadApprovals] = useState(0);
+  const [unreadComplaints, setUnreadComplaints] = useState(0);
+
+  const fetchStats = async () => {
+    try {
+      const response = await api.get('/dashboard/stats');
+      const data = response.data.data;
+      setStats(data);
+      if (data.pendingApprovals > 0) {
+        setUnreadApprovals(data.pendingApprovals);
       }
-    };
+    } catch (err) {
+      console.error("Failed to fetch stats", err);
+    }
+  };
+
+  const fetchPendingCounts = async () => {
+    try {
+      const [pendingRes, complaintsRes] = await Promise.allSettled([
+        api.get('/admin/verify/pending'),
+        api.get('/complaints?status=open')
+      ]);
+
+      if (pendingRes.status === 'fulfilled') {
+        const count = pendingRes.value.data.data?.count || pendingRes.value.data.data?.students?.length || 0;
+        setUnreadApprovals(count);
+      }
+
+      if (complaintsRes.status === 'fulfilled') {
+        const openCount = complaintsRes.value.data.data?.total || complaintsRes.value.data.data?.length || 0;
+        setUnreadComplaints(openCount);
+      }
+    } catch (err) {
+      console.error("Failed to fetch pending counts", err);
+    }
+  };
+
+  useEffect(() => {
     fetchStats();
+    fetchPendingCounts();
   }, []);
+
+  // ── Real-time Socket Listeners for Admin ─────────────────────────────────
+  useEffect(() => {
+    let unsubApproval = null;
+    let unsubComplaint = null;
+
+    const attachListeners = () => {
+      import('../../services/socket').then(({ getSocket, onSocketEvent }) => {
+        const sock = getSocket();
+        if (sock) {
+          unsubApproval = onSocketEvent('approval:new', (data) => {
+            setUnreadApprovals((prev) => prev + 1);
+            setStats((prev) => ({ ...prev, pendingApprovals: (prev.pendingApprovals || 0) + 1 }));
+            addToast(`📩 New approval request from ${data.name || 'a student'}`, 'info', 6000);
+          });
+
+          unsubComplaint = onSocketEvent('complaint:new', (data) => {
+            setUnreadComplaints((prev) => prev + 1);
+            addToast(`💬 New student complaint: ${data.subject || 'Action required'}`, 'info', 6000);
+          });
+        }
+      });
+    };
+
+    attachListeners();
+
+    return () => {
+      if (unsubApproval) unsubApproval();
+      if (unsubComplaint) unsubComplaint();
+    };
+  }, []);
+
+  const handleTabChange = (tabName) => {
+    setActiveTab(tabName);
+    if (tabName === 'approvals') setUnreadApprovals(0);
+    if (tabName === 'complaints') setUnreadComplaints(0);
+  };
 
   return (
     <div className="dashboard-container">
@@ -37,13 +107,37 @@ const AdminDashboard = () => {
         </div>
 
         <nav className="sidebar-nav">
-          <button onClick={() => setActiveTab('overview')} className={`btn ${activeTab === 'overview' ? 'btn-primary' : 'btn-secondary'} sidebar-nav-btn`}><Home size={18} /> Overview</button>
-          <button onClick={() => setActiveTab('approvals')} className={`btn ${activeTab === 'approvals' ? 'btn-primary' : 'btn-secondary'} sidebar-nav-btn`}><CheckSquare size={18} /> Approvals</button>
-          <button onClick={() => setActiveTab('students')} className={`btn ${activeTab === 'students' ? 'btn-primary' : 'btn-secondary'} sidebar-nav-btn`}><Users size={18} /> Students</button>
-          <button onClick={() => setActiveTab('rooms')} className={`btn ${activeTab === 'rooms' ? 'btn-primary' : 'btn-secondary'} sidebar-nav-btn`}><Bed size={18} /> Room Layout</button>
-          <button onClick={() => setActiveTab('complaints')} className={`btn ${activeTab === 'complaints' ? 'btn-primary' : 'btn-secondary'} sidebar-nav-btn`}><CheckSquare size={18} /> Complaints</button>
-          <button onClick={() => setActiveTab('broadcast')} className={`btn ${activeTab === 'broadcast' ? 'btn-primary' : 'btn-secondary'} sidebar-nav-btn`}><Bell size={18} /> Broadcast</button>
-          <button onClick={() => setActiveTab('foodstaff')} className={`btn ${activeTab === 'foodstaff' ? 'btn-primary' : 'btn-secondary'} sidebar-nav-btn`}><Coffee size={18} /> Food & Staff</button>
+          <button onClick={() => handleTabChange('overview')} className={`btn ${activeTab === 'overview' ? 'btn-primary' : 'btn-secondary'} sidebar-nav-btn`}>
+            <Home size={18} /> Overview
+          </button>
+          
+          <button onClick={() => handleTabChange('approvals')} className={`btn ${activeTab === 'approvals' ? 'btn-primary' : 'btn-secondary'} sidebar-nav-btn`} style={{ width: '100%', display: 'flex', alignItems: 'center' }}>
+            <CheckSquare size={18} /> 
+            <span style={{ marginLeft: '0.5rem', flex: 1, textAlign: 'left' }}>Approvals</span>
+            {unreadApprovals > 0 && <span className="whatsapp-badge">{unreadApprovals}</span>}
+          </button>
+
+          <button onClick={() => handleTabChange('students')} className={`btn ${activeTab === 'students' ? 'btn-primary' : 'btn-secondary'} sidebar-nav-btn`}>
+            <Users size={18} /> Students
+          </button>
+
+          <button onClick={() => handleTabChange('rooms')} className={`btn ${activeTab === 'rooms' ? 'btn-primary' : 'btn-secondary'} sidebar-nav-btn`}>
+            <Bed size={18} /> Room Layout
+          </button>
+
+          <button onClick={() => handleTabChange('complaints')} className={`btn ${activeTab === 'complaints' ? 'btn-primary' : 'btn-secondary'} sidebar-nav-btn`} style={{ width: '100%', display: 'flex', alignItems: 'center' }}>
+            <MessageSquare size={18} /> 
+            <span style={{ marginLeft: '0.5rem', flex: 1, textAlign: 'left' }}>Complaints</span>
+            {unreadComplaints > 0 && <span className="whatsapp-badge">{unreadComplaints}</span>}
+          </button>
+
+          <button onClick={() => handleTabChange('broadcast')} className={`btn ${activeTab === 'broadcast' ? 'btn-primary' : 'btn-secondary'} sidebar-nav-btn`}>
+            <Bell size={18} /> Broadcast
+          </button>
+
+          <button onClick={() => handleTabChange('foodstaff')} className={`btn ${activeTab === 'foodstaff' ? 'btn-primary' : 'btn-secondary'} sidebar-nav-btn`}>
+            <Coffee size={18} /> Food & Staff
+          </button>
         </nav>
 
         <button onClick={logout} className="btn sidebar-logout-btn">
@@ -57,8 +151,7 @@ const AdminDashboard = () => {
           <>
             <header className="dashboard-header">
               <h1>Dashboard Overview</h1>
-              {/* Fixed: clicking Add Staff navigates to the Food & Staff tab */}
-              <button className="btn btn-primary" onClick={() => setActiveTab('foodstaff')}>
+              <button className="btn btn-primary" onClick={() => handleTabChange('foodstaff')}>
                 <UserPlus size={18} /> Add Staff
               </button>
             </header>
@@ -73,8 +166,11 @@ const AdminDashboard = () => {
                 </div>
               </div>
 
-              <div className="glass-panel animate-fade-in stat-card card-warning">
-                <h3 className="stat-title">Pending Approvals</h3>
+              <div className="glass-panel animate-fade-in stat-card card-warning" onClick={() => handleTabChange('approvals')} style={{ cursor: 'pointer' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <h3 className="stat-title">Pending Approvals</h3>
+                  {unreadApprovals > 0 && <span className="whatsapp-badge">{unreadApprovals}</span>}
+                </div>
                 <div className="stat-value-container">
                   <span className="stat-value">{stats.pendingApprovals || 0}</span>
                   <span className="stat-subtext-danger">Requires Attention</span>
@@ -94,24 +190,25 @@ const AdminDashboard = () => {
             <section className="quick-action-section">
                <h2>Quick Actions</h2>
                <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '1rem' }}>
-                 <button className="btn btn-secondary" onClick={() => setActiveTab('approvals')}><CheckSquare size={16} /> View Approvals</button>
-                 <button className="btn btn-secondary" onClick={() => setActiveTab('students')}><Users size={16} /> Student Directory</button>
-                 <button className="btn btn-secondary" onClick={() => setActiveTab('rooms')}><Bed size={16} /> Room Layout</button>
-                 <button className="btn btn-secondary" onClick={() => setActiveTab('broadcast')}><Bell size={16} /> Send Broadcast</button>
-                 <button className="btn btn-secondary" onClick={() => setActiveTab('foodstaff')}><Coffee size={16} /> Food & Staff</button>
+                 <button className="btn btn-secondary" onClick={() => handleTabChange('approvals')}>
+                   <CheckSquare size={16} /> View Approvals {unreadApprovals > 0 && `(${unreadApprovals})`}
+                 </button>
+                 <button className="btn btn-secondary" onClick={() => handleTabChange('students')}><Users size={16} /> Student Directory</button>
+                 <button className="btn btn-secondary" onClick={() => handleTabChange('rooms')}><Bed size={16} /> Room Layout</button>
+                 <button className="btn btn-secondary" onClick={() => handleTabChange('broadcast')}><Bell size={16} /> Send Broadcast</button>
+                 <button className="btn btn-secondary" onClick={() => handleTabChange('foodstaff')}><Coffee size={16} /> Food & Staff</button>
                </div>
             </section>
           </>
         )}
 
-        {activeTab === 'approvals' && <Approvals onBack={() => setActiveTab('overview')} onApproved={() => setActiveTab('rooms')} />}
-        {activeTab === 'broadcast' && <Broadcast onBack={() => setActiveTab('overview')} />}
-        {activeTab === 'foodstaff' && <FoodStaff onBack={() => setActiveTab('overview')} />}
-        {activeTab === 'rooms' && <Rooms onBack={() => setActiveTab('overview')} />}
-        {activeTab === 'students' && <Students onBack={() => setActiveTab('overview')} />}
-        {activeTab === 'complaints' && <Complaints onBack={() => setActiveTab('overview')} />}
+        {activeTab === 'approvals' && <Approvals onBack={() => handleTabChange('overview')} onApproved={() => handleTabChange('rooms')} />}
+        {activeTab === 'broadcast' && <Broadcast onBack={() => handleTabChange('overview')} />}
+        {activeTab === 'foodstaff' && <FoodStaff onBack={() => handleTabChange('overview')} />}
+        {activeTab === 'rooms' && <Rooms onBack={() => handleTabChange('overview')} />}
+        {activeTab === 'students' && <Students onBack={() => handleTabChange('overview')} />}
+        {activeTab === 'complaints' && <Complaints onBack={() => handleTabChange('overview')} />}
 
-        {/* Placeholders for other tabs for now */}
       </main>
     </div>
   );

@@ -29,7 +29,36 @@ Thumbs.db
 # Editor directories
 .vscode/
 .idea/
+*.swp
+*.swo
+
+# Cache and temporary files
+.cache/
+.eslintcache
+.node_repl_history
+*.tsbuildinfo
+
+# OS files
+.DS_Store
+Thumbs.db
+.env.local.*.js
 
 # Uploaded files
 backend/uploads/*
 !backend/uploads/.gitkeep
+
+# Testing
+coverage/
+.nyc_output/
+
+# Build artifacts
+backend/dist/
+frontend/dist/
+
+
+reset_passwords.js
+api_test.js
+e2e_complaint_test.js
+e2e_rooms_test.js
+e2e_validation_register.js
+e2e_validation_test.js
