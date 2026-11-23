@@ -58,17 +58,18 @@ const login = async (req, res, next) => {
         const { email, password } = req.body;
         const { user, accessToken, refreshToken } = await authService.login(email, password);
 
-        // Set refresh token in httpOnly cookie
+        // Set refresh token in httpOnly cookie with cross-site support
         res.cookie('refreshToken', refreshToken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'Strict',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
             maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
         });
 
         ApiResponse.success(res, {
             user: { _id: user._id, email: user.email, name: user.name, role: user.role },
-            accessToken
+            accessToken,
+            refreshToken
         }, 'Login successful');
     } catch (err) {
         next(err);
@@ -95,11 +96,11 @@ const refresh = async (req, res, next) => {
         res.cookie('refreshToken', refreshToken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'Strict',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
             maxAge: 7 * 24 * 60 * 60 * 1000
         });
 
-        ApiResponse.success(res, { accessToken }, 'Token refreshed');
+        ApiResponse.success(res, { accessToken, refreshToken }, 'Token refreshed');
     } catch (err) {
         next(err);
     }

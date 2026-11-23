@@ -37,16 +37,9 @@ const StudentDashboard = () => {
       if (data.needsProfile) {
         setNeedsProfile(true);
         setStudentInfo(null);
-        if (isFirstLoad.current) {
-          setActiveTab('profile');
-          addToast('Please complete your profile to get started.', 'info');
-        }
       } else {
         setNeedsProfile(false);
         setStudentInfo(data.student);
-        if (isFirstLoad.current && data.student && data.student.verificationStatus !== 'approved') {
-          setActiveTab('profile');
-        }
       }
     } catch (err) {
       console.error('Failed to fetch student info:', err.apiMessage || err.message);

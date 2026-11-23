@@ -60,6 +60,15 @@ const Profile = ({ studentInfo, onProfileUpdate, onBack }) => {
     setIsSubmitting(true);
     setMessage({ text: '', type: 'info' });
 
+    // Client-side validation: ensure core details are provided before submission
+    if (!formData.sspId?.trim() || !formData.mobile?.trim() || !formData.institution?.trim() || !formData.course?.trim()) {
+      const validationMsg = 'Please complete your personal and academic details before submitting.';
+      setMessage({ text: validationMsg, type: 'error' });
+      addToast(validationMsg, 'warning', 6000);
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       // Clear previous field errors
       setFieldErrors({});
@@ -88,10 +97,8 @@ const Profile = ({ studentInfo, onProfileUpdate, onBack }) => {
       setMessage({ text: successMsg, type: 'success' });
       addToast(successMsg, 'success', 7000);
 
-      // Clear the form after successful submission
-      setFormData(EMPTY_FORM);
+      // Reset file input references but preserve entered text data for user reference
       setDocumentFiles({});
-      // Reset file inputs by resetting the form element
       if (formRef.current) formRef.current.reset();
 
       if (onProfileUpdate) onProfileUpdate();

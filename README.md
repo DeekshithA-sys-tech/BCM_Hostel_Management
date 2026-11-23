@@ -1,4 +1,18 @@
-# Hostel Management System
+# Hostel Management System (HMS)
+
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel-success?style=for-the-badge&logo=vercel)](https://bcm-hostel-management-lyart.vercel.app/)
+[![Backend Status](https://img.shields.io/badge/Backend-Render-blue?style=for-the-badge&logo=render)](https://bcm-hostel-management-lyart.vercel.app/)
+[![Database](https://img.shields.io/badge/MongoDB-Atlas%20Cloud-green?style=for-the-badge&logo=mongodb)](https://bcm-hostel-management-lyart.vercel.app/)
+
+> **🚀 Live Application URL:** [https://bcm-hostel-management-lyart.vercel.app/](https://bcm-hostel-management-lyart.vercel.app/)
+
+### 🔑 Demo Credentials for Recruiters & Testing
+| Role | Email | Password | Access Highlights |
+| :--- | :--- | :--- | :--- |
+| **Admin / Warden** | `admin@hostel.com` | `Admin@123456` | Full administrative control, student verification, room allocations, broadcast announcements, real-time unread badges |
+| **Student** | Self-register a student account on the portal | Your chosen password | Profile enrollment, room and roommate viewer, complaint ticketing, real-time notice alerts, hostel staff directory |
+
+---
 
 A comprehensive enterprise-grade hostel management system built with modern web technologies. This system streamlines hostel operations including student management, room allocation, attendance tracking, food scheduling, complaint management, and administrative controls.
 

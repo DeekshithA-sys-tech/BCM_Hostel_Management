@@ -35,6 +35,9 @@ export const useAuthStore = create((set) => ({
       const token = data.accessToken;
 
       localStorage.setItem('token', token);
+      if (data.refreshToken) {
+        localStorage.setItem('refreshToken', data.refreshToken);
+      }
 
       // Connect WebSocket after successful login
       connectSocket(token);
@@ -63,6 +66,7 @@ export const useAuthStore = create((set) => ({
 
   logout: () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
     disconnectSocket();
     resetAuth();
     set({ user: null, token: null, isAuthenticated: false, error: null });

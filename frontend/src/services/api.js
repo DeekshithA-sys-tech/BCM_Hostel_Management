@@ -60,13 +60,22 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        // Refresh token is in httpOnly cookie — withCredentials sends it automatically
-        const refreshRes = await axios.post(`${BASE}/auth/refresh`, {}, { withCredentials: true });
+        const storedRefreshToken = localStorage.getItem('refreshToken');
+        // Sends both httpOnly cookie (withCredentials) AND body fallback for cross-domain stability
+        const refreshRes = await axios.post(
+          `${BASE}/auth/refresh`,
+          { refreshToken: storedRefreshToken },
+          { withCredentials: true }
+        );
         const newAccessToken = refreshRes.data?.data?.accessToken;
+        const newRefreshToken = refreshRes.data?.data?.refreshToken;
 
         if (!newAccessToken) throw new Error('No access token in refresh response');
 
         localStorage.setItem('token', newAccessToken);
+        if (newRefreshToken) {
+          localStorage.setItem('refreshToken', newRefreshToken);
+        }
 
         // Reconnect socket with new token (lazy import to avoid circular dep)
         import('./socket').then(({ connectSocket, disconnectSocket }) => {
@@ -81,6 +90,7 @@ api.interceptors.response.use(
         processQueue(refreshError, null);
         // Refresh itself failed → full logout
         localStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
         dispatchApiEvent('Your session has expired. Please log in again.', 'warning', 401);
         setTimeout(() => { window.location.href = '/auth'; }, 1500);
         return Promise.reject(refreshError);

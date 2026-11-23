@@ -4,6 +4,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
+const cookieParser = require('cookie-parser');
 const path = require('path');
 
 const { swaggerUi, swaggerSpec } = require('./config/swagger');
@@ -61,9 +62,10 @@ const limiter = rateLimit({
 });
 app.use('/api/', limiter);
 
-// ── Body Parsing ─────────────────────────────────────────────────────────────
+// ── Body & Cookie Parsing ─────────────────────────────────────────────────────
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(cookieParser());
 
 // ── Logger ───────────────────────────────────────────────────────────────────
 if (process.env.NODE_ENV !== 'test') {
