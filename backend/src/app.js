@@ -29,8 +29,20 @@ app.use(helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' }
 }));
 
+const allowedOrigins = process.env.CLIENT_URL 
+    ? process.env.CLIENT_URL.split(',').map(s => s.trim()) 
+    : ['http://localhost:5173', 'http://localhost'];
+
 app.use(cors({
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    origin: (origin, callback) => {
+        // Allow requests with no origin (e.g. mobile apps, curl, postman)
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+        // In cloud deployments, allow the incoming web origin
+        return callback(null, true);
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']

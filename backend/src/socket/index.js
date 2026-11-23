@@ -13,7 +13,7 @@ const initSocket = (httpServer) => {
 
     const io = new Server(httpServer, {
         cors: {
-            origin: process.env.CLIENT_URL || 'http://localhost:5173',
+            origin: (origin, callback) => callback(null, true),
             methods: ['GET', 'POST'],
             credentials: true
         },

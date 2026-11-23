@@ -22,7 +22,12 @@ const connectDB = async () => {
             });
         });
 
-        const conn = await mongoose.connect(process.env.MONGO_URI, {
+        const mongoUri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/hostel_management';
+        if (!process.env.MONGO_URI) {
+            logger.warn('⚠️ MONGO_URI not found in environment, falling back to default localhost:27017.');
+        }
+
+        const conn = await mongoose.connect(mongoUri, {
             serverSelectionTimeoutMS: 5000,
         });
         logger.info(`✅ MongoDB Connected: ${conn.connection.host}`);

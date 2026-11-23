@@ -18,7 +18,7 @@ const startServer = async () => {
   // Initialize Socket.io
   initSocket(server);
 
-  server.listen(PORT, () => {
+  server.listen(PORT, '0.0.0.0', () => {
     logger.info(`🚀 Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
     logger.info(`📚 API Docs: http://localhost:${PORT}/api/v1/docs`);
     logger.info(`🔌 WebSocket: ws://localhost:${PORT}`);
