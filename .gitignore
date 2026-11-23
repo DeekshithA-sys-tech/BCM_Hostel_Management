@@ -62,3 +62,5 @@ e2e_complaint_test.js
 e2e_rooms_test.js
 e2e_validation_register.js
 e2e_validation_test.js
+fix.js
+seed_workflow.js
