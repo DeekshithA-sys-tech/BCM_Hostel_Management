@@ -22,18 +22,22 @@ const connectDB = async () => {
             });
         });
 
-        const mongoUri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/hostel_management';
-        if (!process.env.MONGO_URI) {
-            logger.warn('⚠️ MONGO_URI not found in environment, falling back to default localhost:27017.');
+        const mongoUri = process.env.MONGO_URI;
+        if (!mongoUri) {
+            logger.error('❌ MONGO_URI is missing from environment variables!');
+            logger.warn('👉 Please set the MONGO_URI environment variable in your cloud dashboard (e.g. Render Environment settings) with your MongoDB Atlas connection string.');
+            return false;
         }
 
         const conn = await mongoose.connect(mongoUri, {
-            serverSelectionTimeoutMS: 5000,
+            serverSelectionTimeoutMS: 8000,
         });
         logger.info(`✅ MongoDB Connected: ${conn.connection.host}`);
+        return true;
     } catch (error) {
         logger.error(`❌ MongoDB Connection Error: ${error.message}`);
-        process.exit(1);
+        logger.warn('👉 Check your connection string and ensure MongoDB Atlas IP Access List has 0.0.0.0/0 (Allow access from anywhere) enabled.');
+        return false;
     }
 };
 

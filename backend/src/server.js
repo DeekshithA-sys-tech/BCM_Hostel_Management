@@ -9,9 +9,6 @@ const { initSocket } = require('./socket');
 const PORT = process.env.PORT || 5000;
 
 const startServer = async () => {
-  await connectDB();
-  await seedAdmin();
-
   // Create HTTP server so Socket.io can attach to it
   const server = http.createServer(app);
 
@@ -22,6 +19,15 @@ const startServer = async () => {
     logger.info(`🚀 Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
     logger.info(`📚 API Docs: http://localhost:${PORT}/api/v1/docs`);
     logger.info(`🔌 WebSocket: ws://localhost:${PORT}`);
+  });
+
+  // Connect to Database asynchronously to allow cloud health checks to succeed immediately
+  connectDB().then((connected) => {
+    if (connected) {
+      seedAdmin().catch((err) => logger.warn('Seed admin skipped:', err.message));
+    }
+  }).catch((err) => {
+    logger.warn('Initial database connection attempt deferred:', err.message);
   });
 
   // Graceful shutdown
