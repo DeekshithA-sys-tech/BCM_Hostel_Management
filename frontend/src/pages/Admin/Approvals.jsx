@@ -24,6 +24,20 @@ const Approvals = ({ onBack, onApproved }) => {
 
   useEffect(() => {
     fetchPending();
+
+    let unsubscribe = null;
+    import('../../services/socket').then(({ getSocket, onSocketEvent }) => {
+      const sock = getSocket();
+      if (sock) {
+        unsubscribe = onSocketEvent('approval:new', () => {
+          fetchPending();
+        });
+      }
+    }).catch(() => {});
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
   }, []);
 
   const openConfirm = (id, action) => {

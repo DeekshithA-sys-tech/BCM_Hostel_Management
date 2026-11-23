@@ -220,7 +220,7 @@ const updateStudentProfile = async (req, res, next) => {
             };
         }
 
-        // If already approved, queue changes as proposed updates
+        // If already approved, queue changes as proposed updates for admin approval
         if (student.verificationStatus === 'approved') {
             student = await Student.findOneAndUpdate(
                 { userId },
@@ -228,9 +228,16 @@ const updateStudentProfile = async (req, res, next) => {
                 { new: true, runValidators: true }
             ).populate('userId', 'name email');
         } else {
+            // For new or previously rejected profiles, set status back to 'pending'
             student = await Student.findOneAndUpdate(
                 { userId },
-                { $set: updates },
+                { 
+                    $set: { 
+                        ...updates,
+                        verificationStatus: 'pending',
+                        verificationRemarks: null 
+                    } 
+                },
                 { new: true, runValidators: true }
             ).populate('userId', 'name email');
         }
