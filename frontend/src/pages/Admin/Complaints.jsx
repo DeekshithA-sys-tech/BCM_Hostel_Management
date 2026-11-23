@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import api from '../../services/api';
 import useToastStore from '../../store/useToastStore';
 import { onSocketEvent } from '../../services/socket';
-import { MessageSquare, Check, CornerDownRight, ArrowLeft, Zap, Clock, AlertCircle } from 'lucide-react';
+import { MessageSquare, Check, CornerDownRight, ArrowLeft, Clock, AlertCircle } from 'lucide-react';
 
 const STATUS_CONFIG = {
     open:        { color: 'var(--warning)', bg: 'rgba(245,158,11,0.12)',   label: 'Open' },
@@ -37,7 +37,7 @@ const AdminComplaints = ({ onBack }) => {
         const unsubNew = onSocketEvent('complaint:new', (complaint) => {
             setComplaints(prev => [complaint, ...prev]);
             setNewCount(n => n + 1);
-            addToast(`🆕 New complaint from ${complaint.studentId?.userId?.name || 'a student'}: "${complaint.subject}"`, 'info', 6000);
+            addToast(`New complaint: "${complaint.subject}"`, 'info', 5000);
         });
 
         // ── Real-time: listen for complaint updates ────────────────────────────
@@ -55,20 +55,20 @@ const AdminComplaints = ({ onBack }) => {
 
     const handleResolve = async (id) => {
         if (!replyState.text.trim()) {
-            addToast('Please write a reply before resolving.', 'warning');
+            addToast('Please enter resolution remarks before submitting.', 'warning');
             return;
         }
         setIsSubmitting(true);
         try {
             await api.patch(`/complaints/${id}/status`, { status: 'resolved', resolution: replyState.text });
-            addToast('Complaint resolved & student notified in real-time!', 'success');
+            addToast('Complaint marked as resolved.', 'success');
             setReplyState({ id: null, text: '' });
             // Optimistic update
             setComplaints(prev => prev.map(c =>
                 c._id === id ? { ...c, status: 'resolved', resolution: replyState.text } : c
             ));
         } catch (err) {
-            addToast(err.response?.data?.message || err.apiMessage || 'Failed to resolve complaint.', 'error');
+            addToast(err.response?.data?.message || err.apiMessage || 'Failed to update complaint.', 'error');
         } finally {
             setIsSubmitting(false);
         }
@@ -86,18 +86,10 @@ const AdminComplaints = ({ onBack }) => {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
                 <button onClick={onBack} className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <ArrowLeft size={16} /> Back to Overview
                 </button>
-
-                {/* Real-time indicator */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 0.9rem', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: '20px' }}>
-                    <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--success)', animation: 'pulse 2s infinite', display: 'block' }} />
-                    <Zap size={12} color="var(--success)" />
-                    <span style={{ fontSize: '0.78rem', color: 'var(--success)', fontWeight: 600 }}>Live Updates Active</span>
-                    <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}`}</style>
-                </div>
             </div>
 
             <h2 style={{ color: 'var(--brand-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
@@ -183,9 +175,6 @@ const AdminComplaints = ({ onBack }) => {
                                                         {isSubmitting ? 'Sending...' : 'Submit & Resolve'}
                                                     </button>
                                                     <button className="btn btn-secondary" onClick={() => setReplyState({ id: null, text: '' })}>Cancel</button>
-                                                    <span style={{ fontSize: '0.75rem', color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                                                        <Zap size={12} /> Student notified via WebSocket
-                                                    </span>
                                                 </div>
                                             </div>
                                         ) : (

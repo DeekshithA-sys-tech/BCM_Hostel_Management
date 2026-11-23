@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import api from '../../services/api';
 import useToastStore from '../../store/useToastStore';
-import { Bell, Send, ArrowLeft, Zap, Users, User, Bed, Search } from 'lucide-react';
+import { Bell, Send, ArrowLeft, Users, User, Bed, Search } from 'lucide-react';
 
 const Broadcast = ({ onBack }) => {
     const addToast = useToastStore((s) => s.addToast);
@@ -120,7 +120,7 @@ const Broadcast = ({ onBack }) => {
                 ...(formData.targetScope === 'individual' ? { studentId: formData.studentId } : {}),
             };
             const res = await api.post('/notifications', payload);
-            addToast('Broadcast sent! Students receive it instantly via WebSocket.', 'success', 5000);
+            addToast('Notice published successfully.', 'success', 4000);
 
             const created = res.data.data?.notification;
             if (created) setRecentBroadcasts(prev => [created, ...prev.slice(0, 14)]);
@@ -129,7 +129,7 @@ const Broadcast = ({ onBack }) => {
             setSelectedStudent(null); setSelectedRoom(null);
             setStuSearch(''); setRoomSearch('');
         } catch (err) {
-            addToast(err.response?.data?.message || err.apiMessage || 'Failed to send broadcast.', 'error');
+            addToast(err.response?.data?.message || err.apiMessage || 'Failed to send notice.', 'error');
         } finally { setIsSubmitting(false); }
     };
 
@@ -148,15 +148,6 @@ const Broadcast = ({ onBack }) => {
                 style={{ alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <ArrowLeft size={16} /> Back to Overview
             </button>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1rem', background: 'rgba(16,185,129,0.07)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: '8px' }}>
-                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--success)', animation: 'pulse 2s infinite', display: 'block' }} />
-                <Zap size={14} color="var(--success)" />
-                <span style={{ fontSize: '0.85rem', color: 'var(--success)', fontWeight: 600 }}>
-                    WebSocket Active — broadcasts deliver instantly to connected students
-                </span>
-                <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}`}</style>
-            </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: '1.5rem', alignItems: 'start' }}>
 

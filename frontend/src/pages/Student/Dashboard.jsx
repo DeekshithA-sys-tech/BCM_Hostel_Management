@@ -73,19 +73,19 @@ const StudentDashboard = () => {
           unsubNotif = onSocketEvent('notification:new', (notif) => {
             setNotifications(prev => [notif, ...prev]);
             setUnreadNotices(prev => prev + 1);
-            addToast(`📢 New notice: ${notif.title}`, 'info', 6000);
+            addToast(`New notice: ${notif.title}`, 'info', 5000);
           });
 
           unsubVerified = onSocketEvent('profile:verified', (data) => {
             setUnreadVerification(prev => prev + 1);
             fetchInfo();
             const isApp = data.status === 'approved';
-            addToast(isApp ? '🎉 Your profile verification has been approved!' : '⚠️ Profile review update received.', isApp ? 'success' : 'warning', 7000);
+            addToast(isApp ? 'Your profile has been approved.' : 'Profile review remarks updated.', isApp ? 'success' : 'info', 6000);
           });
 
           unsubComplaint = onSocketEvent('complaint:updated', (data) => {
             setUnreadComplaints(prev => prev + 1);
-            addToast(`💬 Complaint status updated to "${data.status}"`, 'info', 6000);
+            addToast(`Complaint status updated to "${data.status}".`, 'info', 5000);
           });
         }
       });

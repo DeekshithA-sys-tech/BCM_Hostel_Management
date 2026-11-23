@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import api from '../../services/api';
 import useToastStore from '../../store/useToastStore';
 import { onSocketEvent, joinComplaintRoom } from '../../services/socket';
-import { MessageCircle, AlertCircle, ArrowLeft, Send, Clock, CheckCircle, Zap } from 'lucide-react';
+import { MessageCircle, AlertCircle, ArrowLeft, Send, Clock, CheckCircle } from 'lucide-react';
 
 const STATUS_CONFIG = {
     open:        { color: 'var(--warning)', bg: 'rgba(245,158,11,0.12)',  label: 'Open' },
@@ -44,9 +44,9 @@ const Complaints = ({ onBack, studentHasProfile }) => {
                 c._id === updated._id ? { ...c, ...updated } : c
             ));
             if (updated.status === 'resolved') {
-                addToast(`✅ Your complaint "${updated.subject}" has been resolved by the admin!`, 'success', 7000);
+                addToast(`Your complaint "${updated.subject}" has been marked as resolved.`, 'success', 5000);
             } else {
-                addToast(`📋 Update on your complaint: status changed to ${updated.status}`, 'info');
+                addToast(`Complaint update: status changed to ${updated.status}.`, 'info');
             }
         });
 
@@ -68,7 +68,7 @@ const Complaints = ({ onBack, studentHasProfile }) => {
         try {
             const res = await api.post('/complaints', formData);
             const newComplaint = res.data.data?.complaint;
-            addToast('Complaint submitted! Admin will be notified in real-time.', 'success');
+            addToast('Complaint submitted successfully.', 'success');
             setFormData({ subject: '', category: 'maintenance', priority: 'medium', description: '' });
 
             // Add to local state and join its socket room
@@ -95,17 +95,9 @@ const Complaints = ({ onBack, studentHasProfile }) => {
 
             {/* ── Submit form ── */}
             <div className="glass-panel" style={{ padding: '2rem' }}>
-                <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--brand-secondary)', marginBottom: '0.5rem' }}>
+                <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--brand-secondary)', marginBottom: '1.5rem' }}>
                     <MessageCircle size={22} /> Lodge a Complaint
                 </h2>
-
-                {/* WebSocket indicator */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem' }}>
-                    <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--success)', animation: 'pulse 2s infinite', display: 'block' }} />
-                    <Zap size={12} color="var(--success)" />
-                    <span style={{ fontSize: '0.78rem', color: 'var(--success)' }}>Admins notified instantly via WebSocket</span>
-                    <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}`}</style>
-                </div>
 
                 {/* Guard: profile not completed */}
                 {!studentHasProfile && (

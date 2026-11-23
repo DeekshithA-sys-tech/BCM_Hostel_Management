@@ -23,13 +23,9 @@ function App() {
     const handler = (e) => {
       const { message, type, status } = e.detail;
 
-      // 403 on admin pages = wrong account — guide the user
+      // 403 permission notice
       if (status === 403) {
-        addToast(
-          `Access denied (403). You don't have permission for this action. If you're logged in as a student, please log out and log in as Admin.`,
-          'warning',
-          8000
-        );
+        addToast('Access denied: You do not have permission for this action.', 'warning', 6000);
         return;
       }
 

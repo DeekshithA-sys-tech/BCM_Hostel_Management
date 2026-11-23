@@ -72,12 +72,12 @@ const AdminDashboard = () => {
           unsubApproval = onSocketEvent('approval:new', (data) => {
             setUnreadApprovals((prev) => prev + 1);
             setStats((prev) => ({ ...prev, pendingApprovals: (prev.pendingApprovals || 0) + 1 }));
-            addToast(`📩 New approval request from ${data.name || 'a student'}`, 'info', 6000);
+            addToast(`New verification request from ${data.name || 'a student'}.`, 'info', 5000);
           });
 
           unsubComplaint = onSocketEvent('complaint:new', (data) => {
             setUnreadComplaints((prev) => prev + 1);
-            addToast(`💬 New student complaint: ${data.subject || 'Action required'}`, 'info', 6000);
+            addToast(`New complaint: "${data.subject || 'Action required'}".`, 'info', 5000);
           });
         }
       });

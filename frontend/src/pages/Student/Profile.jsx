@@ -91,8 +91,8 @@ const Profile = ({ studentInfo, onProfileUpdate, onBack }) => {
       await api.put('/students/profile', form);
 
       const successMsg = isApproved
-        ? '✅ Profile update submitted. Changes will take effect after admin approval.'
-        : '✅ Profile submitted for verification. You will be notified once reviewed.';
+        ? 'Profile update submitted. Changes will take effect after admin approval.'
+        : 'Profile submitted for verification. You will be notified once reviewed.';
 
       setMessage({ text: successMsg, type: 'success' });
       addToast(successMsg, 'success', 7000);
